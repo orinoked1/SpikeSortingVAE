@@ -1,11 +1,9 @@
 import numpy as np
 import scipy.io
-from torch.utils.data import Dataset
 import os
 import csv
 import torch
 import matplotlib.pyplot as plt
-import pandas as pd
 
 
 
@@ -129,53 +127,6 @@ class SpikeDataLoader(object):
         spike = self.spk_data[spike_idx,:,:].squeeze()
         label = self.clu_files_arr[spike_idx].squeeze()
         return torch.from_numpy(spike), torch.from_numpy(label)
-
-
-class SynteticSpikeDataLoader(object):
-    def __init__(self,path2spikes,path2class, batch_size, shuffle,train):
-        self.N_CHANNELS_OUT = 1
-        self.N_SAMPLES = 64
-        self.shuffle = shuffle
-
-        self._index = 0
-        self.batch_size = batch_size
-        data = pd.read_csv(path2spikes, header=None)
-        data = normalize_int16(data)
-        data = torch.tensor(data.values)
-        data = torch.t(data)
-        # read gt classes
-        gt_classes = pd.read_csv(path2class, header=None)
-        gt_classes = torch.tensor(gt_classes.values)
-        gt_classes = torch.squeeze(gt_classes, dim=1)
-        if train:
-            self.data = data[0:round(0.7 * data.shape[0]), :]  # train
-            self.gt_classes = gt_classes[0:round(0.7 * data.shape[0])]  # train gt classes
-        else:
-            self.data = data[round(0.7 * data.shape[0]):, :]  # test
-            self.gt_classes = gt_classes[round(0.7 * data.shape[0]):]  # test gt classes
-        self.data = self.data[:,None,:]
-
-    def __len__(self):
-        return self.data.shape[0]
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self._index + self.batch_size >= len(self):
-            raise StopIteration
-        spike = self.data[self._index:self._index + self.batch_size, :, :]
-        label = self.gt_classes[self._index:self._index + self.batch_size]
-        self._index += self.batch_size
-        return spike.float(), label.float()
-
-    def reset(self):
-        self._index = 0
-
-    def get_spike(self, spike_idx):
-        spike = self.data[spike_idx, :, :]
-        label = self.gt_classes[spike_idx]
-        return spike.float(), label.float()
 
 
 def show_spike(spike, dashed=False):

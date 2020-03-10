@@ -13,14 +13,14 @@ do_train = True
 if do_train:
     batch_size = 128
     shuffle = True
-    file_dirs = ["C:/DL_data" ]
-    file_clu_names = ["mF105_10.spk.1" ]
+    file_dirs = [os.path.join(os.getcwd(), 'example_data')]
+    file_clu_names = ["mF105_10.spk.2" ]
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
     for latent_dim in [27]:
         for learn_rate in [1e-3, 1e-4]:  # default 1e-3
-            for weight_decay in [1e-4, 1e-5]:  # default 1e-4
-                for shuffle_channels in [False, True]:  # default False
-                    for drop_rate in [0.2, 0.5]:  # default 0.2
+            for weight_decay in [1e-4]:  # default 1e-4
+                for shuffle_channels in [False]:  # default False
+                    for drop_rate in [0.2]:  # default 0.2
                         cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
                                "conv1_ch": 256, "conv2_ch": 16, "latent_dim": latent_dim,
                                "conv0_ker": 1, "conv1_ker": 3, "conv2_ker": 1,
@@ -44,12 +44,11 @@ if do_search:
     max_acc = 0
     model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
     for i_model in range(len(model_list)):
-        file_dirs = ["C:/DL_data"]
+        file_dirs = [os.path.join(os.getcwd(), 'example_data')]
         file_clu_names = ["mF105_10.spk.2", ]
         torch.manual_seed(0)
         np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=16384 * 2, shuffle=False,
-                                      dl_size=16384 * 2 * 3 + 1)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=500, shuffle=False)
         vae_model = Vae.load_vae_model(model_list[i_model])
         feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e5)
 
@@ -68,13 +67,12 @@ if do_search:
 
 do_full_eval = True
 if do_full_eval:
-    file_dirs = ["C:/DL_data"]
+    file_dirs = [os.path.join(os.getcwd(), 'example_data')]
     file_clu_names = ["mF105_10.spk.2"]
     torch.manual_seed(0)
     np.random.seed(0)
-    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=16384 * 2, shuffle=False,
-                                  dl_size=(16384 * 2 * 3 + 1)*2,dl_offset=16384 * 2 * 3 + 1)
-    vae_model = Vae.load_vae_model('vae_LD27_LR1E-03_WD1E-05_SDFalse_DR0.2 (2)_best.pt')
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=500, shuffle=False)
+    vae_model = Vae.load_vae_model(model_list[i_model])
     feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e6)
 
     unique_classes, class_counts = np.unique(classes, return_counts=True)

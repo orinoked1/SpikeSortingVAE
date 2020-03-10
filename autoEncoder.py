@@ -76,10 +76,8 @@ class Decoder(nn.Module):
 
 
 def calc_vae_loss(x, x_recon, enc_mu, enc_log_var):
-    # reconstruction_loss = F.mse_loss(x, x_recon ,reduction='sum')
     Loss = nn.MSELoss(reduction='sum')
     reconstruction_loss = Loss(x_recon, x)
-    # reconstruction_loss = torch.sum(-x * x_recon.log())
     kld_loss = -0.5 * torch.sum(1 + enc_log_var - enc_mu ** 2 - torch.exp(enc_log_var))
     return kld_loss + reconstruction_loss
 
@@ -161,8 +159,6 @@ class Vae(nn.Module):
         return dec_out, enc_mu, enc_log_var
 
     def train_epoch(self, train_loader):
-        # pr = cProfile.Profile()
-        # pr.enable()
         epoch_loss = 0
         last_batch_portion = 0
         self.train()
@@ -176,7 +172,6 @@ class Vae(nn.Module):
             self.optimizer.zero_grad()
             # Forward Pass
             dec_out, enc_mu, enc_log_var = self.forward(spikes)
-            # show_two_spikes(spikes[0,:,:].cpu().detach().numpy().squeeze(),dec_out[0,:,:].cpu().detach().numpy().squeeze())
             # Compute loss
             loss = self.criterion(spikes, dec_out, enc_mu, enc_log_var)
             # Backward Pass
