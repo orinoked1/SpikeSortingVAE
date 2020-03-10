@@ -25,7 +25,7 @@ if do_train:
                                "conv1_ch": 256, "conv2_ch": 16, "latent_dim": latent_dim,
                                "conv0_ker": 1, "conv1_ker": 3, "conv2_ker": 1,
                                "ds_ratio_1": 2, "ds_ratio_2": 2,
-                               "cardinality": 32, "dropRate": drop_rate, "n_epochs": 1,
+                               "cardinality": 32, "dropRate": drop_rate, "n_epochs": 15,
                                "learn_rate": learn_rate, "weight_decay": weight_decay,
                                "shuffle_channels": shuffle_channels}
                         cfg["ds_ratio_tot"] = cfg["ds_ratio_2"] * cfg["ds_ratio_1"]
