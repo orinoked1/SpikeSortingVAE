@@ -18,9 +18,9 @@ if do_train:
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
     for latent_dim in [27]:
         for learn_rate in [1e-3, 1e-4]:  # default 1e-3
-            for weight_decay in [1e-4]:  # default 1e-4
-                for shuffle_channels in [False]:  # default False
-                    for drop_rate in [0.2]:  # default 0.2
+            for weight_decay in [1e-4,1e-5]:  # default 1e-4
+                for shuffle_channels in [False,True]:  # default False
+                    for drop_rate in [0.2,0.5]:  # default 0.2
                         cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
                                "conv1_ch": 256, "conv2_ch": 16, "latent_dim": latent_dim,
                                "conv0_ker": 1, "conv1_ker": 3, "conv2_ker": 1,
