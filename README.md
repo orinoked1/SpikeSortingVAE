@@ -8,7 +8,7 @@ Code:
 
 The main function is main.py it does training, validation, results evaluation and creates figures.
 
-For data handling it use the SpikeDataLoader class defined in dataHandle.py. We uses the “spk” and “clu” file format (http://neurosuite.sourceforge.net/formats.html) for data storing. An example data files can be found in “example_data” folder. The SpikeDataLoader class can be replaced by any iterable object that returns spikes and classes as torch tensors.
+For data handling it use the SpikeDataLoader class defined in dataHandle.py. We uses the “spk” and “clu” file format (http://neurosuite.sourceforge.net/formats.html) for data storing. An example data files can be found in “example_data” folder (small data file of 10k spikes). The SpikeDataLoader class can be replaced by any iterable object that returns spikes and classes as torch tensors.
 
 The model itself is defined as a pytorch model in autoEncoder.py. Previously saved models (such as ours in model sub-directory) can be loaded using the load_vae_model class method. Model parameters are accessible using the cfg dictionary in the main function.
 
