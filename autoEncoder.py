@@ -75,10 +75,40 @@ class Decoder(nn.Module):
         return dec_out
 
 
-def calc_vae_loss(x, x_recon, enc_mu, enc_log_var):
+# def calc_vae_loss(x, x_recon, enc_mu, enc_log_var):
+#     Loss = nn.MSELoss(reduction='sum')
+#     reconstruction_loss = Loss(x_recon, x)
+#     kld_loss = -0.5 * torch.sum(1 + enc_log_var - enc_mu ** 2 - torch.exp(enc_log_var))
+#     return kld_loss + reconstruction_loss
+def calc_vae_loss(x, x_recon, enc_mu, enc_log_var, y, unique_labels, target_means):
     Loss = nn.MSELoss(reduction='sum')
     reconstruction_loss = Loss(x_recon, x)
+    # Loss = nn.BCELoss(reduction='sum')
+    # reconstruction_loss = Loss(x_recon, x)
+    # reconstruction_loss = torch.sum(-x * x_recon.log())
     kld_loss = -0.5 * torch.sum(1 + enc_log_var - enc_mu ** 2 - torch.exp(enc_log_var))
+    # print('KL loss =',kld_loss )
+    # print('reconstruction_loss =',reconstruction_loss )
+    return kld_loss + reconstruction_loss
+
+
+def calc_ori_loss2(x, x_recon, enc_mu, enc_log_var, y, unique_labels, target_means):
+    if (isinstance(unique_labels, list)) or (isinstance(unique_labels, list)):
+        return calc_vae_loss(x, x_recon, enc_mu, enc_log_var, y, unique_labels, target_means)
+    reconstruction_loss = F.mse_loss(x, x_recon, reduction='sum')
+    kld_loss = 0
+    classes = unique_labels
+    for i_class in range(len(classes)):
+        class_mus = enc_mu[(y == classes[i_class]).flatten(), :]
+        class_log_vars = enc_log_var[(y == classes[i_class]).flatten(), :]
+
+        class_mu = torch.tensor(target_means[i_class]).cuda()
+        class_var = torch.ones(class_mu.shape).cuda()
+        kld_loss += .5 * (torch.sum(torch.log(class_var) -
+                                    class_log_vars + (torch.exp(class_log_vars) / class_var) +
+                                    (class_mus - class_mu) ** 2 / class_var -
+                                    1))
+
     return kld_loss + reconstruction_loss
 
 
@@ -124,10 +154,12 @@ class Vae(nn.Module):
         if torch.cuda.is_available():
             self.cuda()
         # loss
-        self.criterion = calc_vae_loss
+        self.criterion = calc_ori_loss2
         # optimizer
         self.optimizer = optim.Adam(self.parameters(), lr=self.cfg["learn_rate"],
                                     weight_decay=self.cfg["weight_decay"], amsgrad=True)
+        self.unique_labels = []
+        self.target_means = []
 
     def encoder(self, x):
         out = self.res0(x)
@@ -173,7 +205,7 @@ class Vae(nn.Module):
             # Forward Pass
             dec_out, enc_mu, enc_log_var = self.forward(spikes)
             # Compute loss
-            loss = self.criterion(spikes, dec_out, enc_mu, enc_log_var)
+            loss = self.criterion(spikes, dec_out, enc_mu, enc_log_var, labels, self.unique_labels, self.target_means)
             # Backward Pass
             loss.backward()
             epoch_loss += loss.cpu().detach().numpy()
@@ -186,7 +218,7 @@ class Vae(nn.Module):
                 t = time.time()
                 print("finish {}% of epoch: loss is {:.3E}, time passed {:.1f} sec".format(batch_portion,
                                                                                            epoch_loss / (
-                                                                                                       i_batch * train_loader.batch_size),
+                                                                                                   i_batch * train_loader.batch_size),
                                                                                            elapsed))
                 last_batch_portion = batch_portion
 
@@ -238,6 +270,24 @@ class Vae(nn.Module):
                     break
             train_loader.reset()
             return enc_mu, all_label, all_spk
+
+    def calc_means(self, data_loader):
+        all_sample = torch.tensor(())
+        all_label = []
+        with torch.no_grad():
+            for images, labels in data_loader:
+                images = images.cuda()
+                mu, var = self.encoder(images)
+                mu = mu.cpu()
+                all_sample = torch.cat((all_sample, mu), 0)
+                all_label.append(labels.numpy().flatten())
+        all_label = np.hstack(all_label)
+        all_sample = all_sample.numpy()
+        unique_labelse = np.sort(np.unique(all_label))
+        means = np.zeros([len(unique_labelse), all_sample.shape[1]])
+        for i_label in range(len(unique_labelse)):
+            means[i_label, :] = np.mean(all_sample[all_label == unique_labelse[i_label], :], axis=0)
+        return unique_labelse, means
 
     def save_model(self, path):
         torch.save({
