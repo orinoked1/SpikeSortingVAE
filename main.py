@@ -38,7 +38,6 @@ if do_train:
                         plt.savefig(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
                         plt.clf()
                         vae_model.save_model(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
-
 do_search = False
 if do_search:
     max_acc = 0
@@ -147,12 +146,13 @@ if do_2_stage_train:
     # train
     for fact in factors:
         for lr in LRs:
+
             vae_model = Vae.load_vae_model(os.path.join(os.getcwd(), 'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(cfg["latent_dim"],
                                                                                            cfg["learn_rate"],
                                                                                            cfg["weight_decay"],
                                                                                            cfg["shuffle_channels"],
                                                                                            cfg["dropRate"])))
-
+            vae_model.cfg["n_epochs"] = 20
             cur_target_means = target_means * fact
             vae_model.optimizer = torch.optim.Adam(vae_model.parameters(),
                                                            lr=lr,
@@ -165,7 +165,7 @@ if do_2_stage_train:
             plt.plot(loss_array)
             plt.savefig(os.path.join(os.getcwd(),
                                      'vaeStage2_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}.png'.format(cfg["latent_dim"],
-                                                                                           cfg["learn_rate"],
+                                                                                           lr,
                                                                                            cfg["weight_decay"],
                                                                                            cfg["shuffle_channels"],
                                                                                            cfg["dropRate"],
@@ -174,8 +174,9 @@ if do_2_stage_train:
             vae_model.save_model(os.path.join(os.getcwd(),
                                               'vaeStage2_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}.pt'.format(
                                                   cfg["latent_dim"],
-                                                  cfg["learn_rate"],
+                                                  lr,
                                                   cfg["weight_decay"],
                                                   cfg["shuffle_channels"],
                                                   cfg["dropRate"],
                                                   fact)))
+            del vae_model
