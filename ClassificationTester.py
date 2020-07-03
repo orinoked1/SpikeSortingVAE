@@ -15,6 +15,7 @@ class ClassificationTester(object):
         self.n_init = n_init
         self.max_iter = max_iter
         if len(spikes.shape) == 3:
+            # original spike data of size [#spikes X #recording_channels X #time_samples]
             n_samples = spikes.shape[0]
             n_channels = spikes.shape[1]
             self.features = np.zeros((n_samples, n_channels * 3))
@@ -25,8 +26,12 @@ class ClassificationTester(object):
                 pca = PCA(n_components=3)
                 self.features[:, i_channel * 3:(i_channel + 1) * 3] = pca.fit_transform(
                     spikes[:, i_channel, :].squeeze())
-        else:
+        elif len(spikes.shape) == 2:
+            # 1D feature space of size [#spikes X #featues]
             self.features = spikes
+        elif len(spikes.shape) == 4:
+            # 2D feature space of size [#spikes X #2d_channels X #recording_channels (at encoder center) X #time_samples(at encoder center)]
+            self.features = spikes.reshape(spikes.shape[0],-1)
         # self.features = StandardScaler().fit_transform(self.features)
         self.n_samples = self.features.shape[0]
         self.n_features = self.features.shape[1]
