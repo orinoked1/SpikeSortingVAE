@@ -76,9 +76,9 @@ def calc_ori_loss2(x, x_recon, enc_mu, enc_log_var, y, unique_labels, target_mea
     return kld_loss + reconstruction_loss
 
 
-class resnet_2d_vae(nn.Module):
+class resnet_2d_vae_v2(nn.Module):
     def __init__(self, cfg):
-        super(resnet_2d_vae, self).__init__()
+        super(resnet_2d_vae_v2, self).__init__()
 
         self.re_parameterize = ReParameterize()
 
@@ -148,18 +148,12 @@ class resnet_2d_vae(nn.Module):
             nn.Dropout(p=cfg["dropRate"])
         )
 
-        self.resx_1 = ResNeXtBottleNeck_2d(cfg["dec_conv_1_ch"], cfg["conv_ker"], cardinality=int(cfg["dec_conv_1_ch"]/cfg["cardinality_factor"]),
+        self.resx_3 = ResNeXtBottleNeck_2d(cfg["dec_conv_3_ch"],cfg["conv_ker"], cardinality=int(cfg["dec_conv_3_ch"]/cfg["cardinality_factor"]),
                                       dropRate=cfg["dropRate"])
-        self.resx_2 = ResNeXtBottleNeck_2d(cfg["dec_conv_2_ch"], cfg["conv_ker"], cardinality=int(cfg["dec_conv_2_ch"]/cfg["cardinality_factor"]),
-                                      dropRate=cfg["dropRate"])
-        self.resx_3 = ResNeXtBottleNeck_2d(cfg["dec_conv_3_ch"], cfg["conv_ker"], cardinality=int(cfg["dec_conv_3_ch"]/cfg["cardinality_factor"]),
-                                      dropRate=cfg["dropRate"])
-        self.resnet_1 = BasicResBlock_2d(cfg["dec_conv_1_ch"], cfg["conv_ker"], n_layers=2, decode=True,
-                                    dropRate=cfg["dropRate"])
-        self.resnet_2 = BasicResBlock_2d(cfg["dec_conv_2_ch"], cfg["conv_ker"], n_layers=2, decode=True,
-                                    dropRate=cfg["dropRate"])
+
         self.resnet_3 = BasicResBlock_2d(cfg["dec_conv_3_ch"], cfg["conv_ker"], n_layers=2, decode=True,
                                     dropRate=cfg["dropRate"])
+
         # move model to GPU
         if torch.cuda.is_available():
             self.cuda()
@@ -175,12 +169,12 @@ class resnet_2d_vae(nn.Module):
         if x.ndim==3:
             x = x[:,None,:,:,]
         out = self.enc_conv_1(x)
-        out = self.resx_1(out)
-        out = self.ds_2_2(out)
         out = self.enc_conv_2(out)
-        out = self.resx_2(out)
-        out = self.ds_2_2(out)
         out = self.enc_conv_3(out)
+        out = self.resx_3(out)
+        out = self.ds_2_2(out)
+        out = self.resx_3(out)
+        out = self.ds_2_2(out)
         out = self.resx_3(out)
         out = self.ds_2_2(out)
         out = self.enc_conv_4(out)
@@ -192,12 +186,12 @@ class resnet_2d_vae(nn.Module):
         out = self.dec_conv_4(x)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_3,self.spk_length_3), mode='bicubic')
         out = self.resnet_3(out)
-        out = self.dec_conv_3(out)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_2,self.spk_length_2), mode='bicubic')
-        out = self.resnet_2(out)
-        out = self.dec_conv_2(out)
+        out = self.resnet_3(out)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_1,self.spk_length_1), mode='bicubic')
-        out = self.resnet_1(out)
+        out = self.resnet_3(out)
+        out = self.dec_conv_3(out)
+        out = self.dec_conv_2(out)
         out = self.dec_conv_1(out)
         return out
 
@@ -322,20 +316,20 @@ class resnet_2d_vae(nn.Module):
 
 # from dataHandle import SpikeDataLoader
 # import os
-# batch_size = 1024
+# batch_size = 2048
 # shuffle = True
 # file_dirs = ["C:/DL_data"]
 # file_clu_names = ["mF105_10.spk.1"]
 # data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
 #
 # resnet_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
-#           "enc_conv_1_ch": 32, "enc_conv_2_ch": 64, "enc_conv_3_ch": 128, "enc_conv_4_ch": 8,
-#           "dec_conv_1_ch": 32, "dec_conv_2_ch": 64, "dec_conv_3_ch": 128, "dec_conv_4_ch": 8,
+#           "enc_conv_1_ch": 4, "enc_conv_2_ch": 16, "enc_conv_3_ch": 64, "enc_conv_4_ch": 8,
+#           "dec_conv_1_ch": 4, "dec_conv_2_ch": 16, "dec_conv_3_ch": 64, "dec_conv_4_ch": 8,
 #           "conv_ker": 3,
 #           "ds_ratio": 2,
 #           "cardinality_factor": 8, "dropRate": 0.2, "n_epochs": 15,
 #           "learn_rate": 1e-3, "weight_decay": 1e-5}
 # n_epochs = 100
-# vae_model = resnet_2d_vae(resnet_cfg)
+# vae_model = resnet_2d_vae_v2(resnet_cfg)
 # vae_model.train_data_loader(data_loader)
 # vae_model.save_model(os.path.join(os.getcwd(), 'simple_vae.pt'))

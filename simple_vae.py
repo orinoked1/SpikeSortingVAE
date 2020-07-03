@@ -173,11 +173,11 @@ class simple_vae(nn.Module):
 
     def decoder(self, x):
         out = self.dec_conv_4(x)
-        out = nn.functional.interpolate(out,size=(self.n_recording_chan_3,self.spk_length_3))
+        out = nn.functional.interpolate(out,size=(self.n_recording_chan_3,self.spk_length_3), mode='bicubic')
         out = self.dec_conv_3(out)
-        out = nn.functional.interpolate(out,size=(self.n_recording_chan_2,self.spk_length_2))
+        out = nn.functional.interpolate(out,size=(self.n_recording_chan_2,self.spk_length_2), mode='bicubic')
         out = self.dec_conv_2(out)
-        out = nn.functional.interpolate(out,size=(self.n_recording_chan_1,self.spk_length_1))
+        out = nn.functional.interpolate(out,size=(self.n_recording_chan_1,self.spk_length_1), mode='bicubic')
         out = self.dec_conv_1(out)
         return out
 
@@ -244,7 +244,7 @@ class simple_vae(nn.Module):
                 recon_spike = self.forward(spike)[0]
                 spike = spike.cpu().detach().numpy().squeeze(axis=0)
                 recon_spike = recon_spike.cpu().detach().numpy().squeeze(axis=0)
-                show_two_spikes(spike, recon_spike)
+                show_two_spikes(spike, recon_spike.squeeze())
 
     def forward_encoder(self, train_loader, n_spikes):
         with torch.no_grad():
