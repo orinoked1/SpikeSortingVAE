@@ -258,7 +258,7 @@ class resnet_2d_vae_v2(nn.Module):
                 recon_spike = self.forward(spike)[0]
                 spike = spike.cpu().detach().numpy().squeeze(axis=0)
                 recon_spike = recon_spike.cpu().detach().numpy().squeeze(axis=0)
-                show_two_spikes(spike, recon_spike)
+                show_two_spikes(spike, recon_spike.squeeze())
 
     def forward_encoder(self, train_loader, n_spikes):
         with torch.no_grad():
@@ -294,6 +294,8 @@ class resnet_2d_vae_v2(nn.Module):
         all_label = np.hstack(all_label)
         all_sample = all_sample.numpy()
         unique_labelse = np.sort(np.unique(all_label))
+        # 2D feature space of size [#spikes X #2d_channels X #recording_channels (at encoder center) X #time_samples(at encoder center)]
+        all_sample = all_sample.reshape(all_sample.shape[0],-1)
         means = np.zeros([len(unique_labelse), all_sample.shape[1]])
         for i_label in range(len(unique_labelse)):
             means[i_label, :] = np.mean(all_sample[all_label == unique_labelse[i_label], :], axis=0)

@@ -279,6 +279,8 @@ class simple_vae(nn.Module):
                 all_label.append(labels.numpy().flatten())
         all_label = np.hstack(all_label)
         all_sample = all_sample.numpy()
+        # 2D feature space of size [#spikes X #2d_channels X #recording_channels (at encoder center) X #time_samples(at encoder center)]
+        all_sample = all_sample.reshape(all_sample.shape[0],-1)
         unique_labelse = np.sort(np.unique(all_label))
         means = np.zeros([len(unique_labelse), all_sample.shape[1]])
         for i_label in range(len(unique_labelse)):
