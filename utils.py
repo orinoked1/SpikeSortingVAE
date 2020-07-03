@@ -25,6 +25,25 @@ def make_layers(in_channels, out_channels, kernel_size, n_layers=1, cardinality=
 		in_channels = out_channels
 	
 	return nn.Sequential(*layers)
+def make_2d_layers(in_channels,out_channels,kernel_size,n_layers=3, cardinality=1, dropRate=0):
+	jump = (out_channels/in_channels) ** (1 / float(n_layers))
+	layers = []
+	cur_channels = in_channels
+	for i_layer in range(n_layers-1):
+		layers.append(nn.Conv2d(cur_channels, round(cur_channels*jump), kernel_size=(kernel_size, 1), groups=cardinality,
+								padding=(get_padding(kernel_size), get_padding(1)), bias=False))
+		layers.append(nn.BatchNorm2d(round(cur_channels*jump)))
+		layers.append(nn.ReLU(inplace=True))
+		layers.append(nn.Dropout(p=dropRate))
+		cur_channels = round(cur_channels*jump)
+
+	layers.append(nn.Conv2d(cur_channels, out_channels, kernel_size=(kernel_size, 1), groups=cardinality,
+							padding=(get_padding(kernel_size), get_padding(1)), bias=False))
+	layers.append(nn.BatchNorm2d(out_channels))
+	layers.append(nn.ReLU(inplace=True))
+	layers.append(nn.Dropout(p=dropRate))
+
+	return nn.Sequential(*layers)
 
 class SpikeDataset(Dataset):
 	"""Dataset wrapping of spikes."""

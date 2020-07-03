@@ -1,5 +1,8 @@
 from dataHandle import SpikeDataLoader
 from autoEncoder import Vae
+from simple_vae import simple_vae
+from resnet_2d_vae import resnet_2d_vae
+
 from ClassificationTester import ClassificationTester
 import os
 import torch
@@ -38,7 +41,7 @@ if do_train:
                         plt.savefig(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
                         plt.clf()
                         vae_model.save_model(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
-do_search = False
+do_search = True
 if do_search:
     max_acc = 0
     model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
@@ -99,7 +102,7 @@ if create_figures:
     classification_tester_pca.plot_2d_pca_mat(classification_tester_vae.gmm_pairwise_acc)
     classification_tester_vae.plot_2d_pca_mat(classification_tester_pca.gmm_pairwise_acc)
 
-do_2_stage_train = True
+do_2_stage_train = False
 if do_2_stage_train:
 
     batch_size = 2048
@@ -119,22 +122,22 @@ if do_2_stage_train:
     torch.manual_seed(0)
     np.random.seed(0)
     # training
-    # vae_model = Vae(cfg)
-    # loss_array = vae_model.train_data_loader(data_loader)
-    # plt.plot(loss_array)
-    # plt.savefig(os.path.join(os.getcwd(),
-    #                          'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(cfg["latent_dim"],
-    #                                                                                cfg["learn_rate"],
-    #                                                                                cfg["weight_decay"],
-    #                                                                                cfg["shuffle_channels"],
-    #                                                                                cfg["dropRate"])))
-    # plt.clf()
-    # vae_model.save_model(os.path.join(os.getcwd(),
-    #                                   'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(cfg["latent_dim"],
-    #                                                                                        cfg["learn_rate"],
-    #                                                                                        cfg["weight_decay"],
-    #                                                                                        cfg["shuffle_channels"],
-    #                                                                                        cfg["dropRate"])))
+    vae_model = Vae(cfg)
+    loss_array = vae_model.train_data_loader(data_loader)
+    plt.plot(loss_array)
+    plt.savefig(os.path.join(os.getcwd(),
+                             'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(cfg["latent_dim"],
+                                                                                   cfg["learn_rate"],
+                                                                                   cfg["weight_decay"],
+                                                                                   cfg["shuffle_channels"],
+                                                                                   cfg["dropRate"])))
+    plt.clf()
+    vae_model.save_model(os.path.join(os.getcwd(),
+                                      'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(cfg["latent_dim"],
+                                                                                           cfg["learn_rate"],
+                                                                                           cfg["weight_decay"],
+                                                                                           cfg["shuffle_channels"],
+                                                                                           cfg["dropRate"])))
     vae_model = Vae.load_vae_model(os.path.join(os.getcwd(),'vaeStage1_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(cfg["latent_dim"],
                                                                                            cfg["learn_rate"],
                                                                                            cfg["weight_decay"],
@@ -180,3 +183,95 @@ if do_2_stage_train:
                                                   cfg["dropRate"],
                                                   fact)))
             del vae_model
+
+
+
+do_train_simple_vae = False
+if do_train_simple_vae:
+    batch_size = 2048
+    shuffle = True
+    file_dirs = ["C:/DL_data"]
+    file_clu_names = ["mF105_10.spk.1"]
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
+    for latent_dim in [4,8,16]:
+        for learn_rate in [1e-3, 1e-4]:  # default 1e-3
+            for weight_decay in [1e-5]:  # default 1e-4
+                for drop_rate in [0.2,0.5]:  # default 0.2
+                    simple_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
+                              "enc_conv_1_ch": 32, "enc_conv_2_ch": 64, "enc_conv_3_ch": 128, "enc_conv_4_ch": latent_dim,
+                              "dec_conv_1_ch": 32, "dec_conv_2_ch": 64, "dec_conv_3_ch": 128, "dec_conv_4_ch": latent_dim,
+                              "conv_ker": 3,
+                              "ds_ratio": 2,
+                              "cardinality": 32, "dropRate": drop_rate, "n_epochs": 15,
+                              "learn_rate": learn_rate, "weight_decay": 1e-5}
+                    torch.manual_seed(0)
+                    np.random.seed(0)
+                    # training
+                    vae_model = simple_vae(simple_cfg)
+                    loss_array = vae_model.train_data_loader(data_loader)
+                    plt.plot(loss_array)
+                    plt.savefig(os.path.join(os.getcwd(),'simple_vae_stage_1_LD{}_LR{:.0E}_WD{:.0E}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, drop_rate)))
+                    plt.clf()
+                    vae_model.save_model(os.path.join(os.getcwd(),'simple_vae_stage_1_LD{}_LR{:.0E}_WD{:.0E}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, drop_rate)))
+
+do_train_resnet_2d = False
+if do_train_resnet_2d:
+    batch_size = 2048
+    shuffle = True
+    file_dirs = ["C:/DL_data"]
+    file_clu_names = ["mF105_10.spk.1"]
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
+    for latent_dim in [4,8,16]:
+        for learn_rate in [1e-3, 1e-4]:  # default 1e-3
+            for weight_decay in [1e-5]:  # default 1e-4
+                for drop_rate in [0.2,0.5]:  # default 0.2
+                    resnet_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
+                              "enc_conv_1_ch": 32, "enc_conv_2_ch": 64, "enc_conv_3_ch": 128, "enc_conv_4_ch": latent_dim,
+                              "dec_conv_1_ch": 32, "dec_conv_2_ch": 64, "dec_conv_3_ch": 128, "dec_conv_4_ch": latent_dim,
+                              "conv_ker": 3,
+                              "ds_ratio": 2,
+                              "cardinality_factor": 8, "dropRate": drop_rate, "n_epochs": 15,
+                              "learn_rate": learn_rate, "weight_decay": 1e-5}
+                    torch.manual_seed(0)
+                    np.random.seed(0)
+                    # training
+                    vae_model = resnet_2d_vae(resnet_cfg)
+                    loss_array = vae_model.train_data_loader(data_loader)
+                    plt.plot(loss_array)
+                    plt.savefig(os.path.join(os.getcwd(),
+                                             'resnet_vae_stage_1_LD{}_LR{:.0E}_WD{:.0E}_DR{:.1f}.png'.format(latent_dim,
+                                                                                                           learn_rate,
+                                                                                                           weight_decay,
+                                                                                                           drop_rate)))
+                    plt.clf()
+                    vae_model.save_model(os.path.join(os.getcwd(),
+                                                      'resnet_vae_stage_1_LD{}_LR{:.0E}_WD{:.0E}_DR{:.1f}.pt'.format(latent_dim,
+                                                                                                      learn_rate,
+                                                                                                      weight_decay,
+                                                                                                      drop_rate)))
+
+
+do_search_simple_vae = True
+if do_search_simple_vae:
+    max_acc = 0
+    model_list = glob.glob(os.path.join(os.getcwd(), 'simple_vae*.pt'))
+    for i_model in range(len(model_list)):
+        file_dirs =  ["C:/DL_data"]
+        file_clu_names = ["mF105_10.spk.2", ]
+        torch.manual_seed(0)
+        np.random.seed(0)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=2048, shuffle=False)
+        vae_model = simple_vae.load_vae_model(model_list[i_model])
+        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e5)
+
+        unique_classes, class_counts = np.unique(classes, return_counts=True)
+        small_labels = unique_classes[class_counts < 70]
+        spk_data = spk_data[(classes != small_labels).all(axis=1), :, :]
+        feat = feat[(classes != small_labels).all(axis=1), :]
+        classes = classes[(classes != small_labels).all(axis=1)]
+
+        classifier2 = ClassificationTester(feat, classes, use_pca=False)
+        print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
+        if classifier2.gmm_acc > max_acc:
+            max_acc = classifier2.gmm_acc
+            best_model = i_model
