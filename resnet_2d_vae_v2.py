@@ -124,7 +124,6 @@ class resnet_2d_vae_v2(nn.Module):
         self.dec_conv_1 = nn.Sequential(
             nn.Conv2d(cfg["dec_conv_1_ch"],1, (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
                       padding=(get_padding(cfg["conv_ker"]),get_padding(cfg["conv_ker"])), bias=False),
-            nn.ReLU(inplace=True),
         )
         self.dec_conv_2 = nn.Sequential(
             nn.Conv2d(cfg["dec_conv_2_ch"], cfg["dec_conv_1_ch"], (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
