@@ -174,8 +174,6 @@ class resnet_2d_vae_v2(nn.Module):
         out = self.ds_2_2(out)
         out = self.resx_3(out)
         out = self.ds_2_2(out)
-        out = self.resx_3(out)
-        out = self.ds_2_2(out)
         out = self.enc_conv_4(out)
         mu, log_var = torch.split(out,round(out.shape[1]/2),dim=1)
         return mu, log_var
@@ -183,8 +181,6 @@ class resnet_2d_vae_v2(nn.Module):
 
     def decoder(self, x):
         out = self.dec_conv_4(x)
-        out = nn.functional.interpolate(out,size=(self.n_recording_chan_3,self.spk_length_3), mode='bicubic')
-        out = self.resnet_3(out)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_2,self.spk_length_2), mode='bicubic')
         out = self.resnet_3(out)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_1,self.spk_length_1), mode='bicubic')

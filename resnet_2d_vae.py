@@ -97,15 +97,8 @@ class resnet_2d_vae(nn.Module):
             nn.BatchNorm2d(cfg["enc_conv_2_ch"]),
             nn.Dropout(p=cfg["dropRate"])
         )
-        self.enc_conv_3 = nn.Sequential(
-            nn.Conv2d(cfg["enc_conv_2_ch"], cfg["enc_conv_3_ch"], (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
-                      padding=(get_padding(cfg["conv_ker"]),get_padding(cfg["conv_ker"])), bias=False),
-            nn.ReLU(inplace=True),
-            nn.BatchNorm2d(cfg["enc_conv_3_ch"]),
-            nn.Dropout(p=cfg["dropRate"])
-        )
         self.enc_conv_4 = nn.Sequential(
-            nn.Conv2d(cfg["enc_conv_3_ch"], cfg["enc_conv_4_ch"]*2, (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
+            nn.Conv2d(cfg["enc_conv_2_ch"], cfg["enc_conv_4_ch"]*2, (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
                       padding=(get_padding(cfg["conv_ker"]),get_padding(cfg["conv_ker"])), bias=False),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(cfg["enc_conv_4_ch"]*2),
@@ -132,18 +125,12 @@ class resnet_2d_vae(nn.Module):
             nn.BatchNorm2d(cfg["dec_conv_1_ch"]),
             nn.Dropout(p=cfg["dropRate"])
         )
-        self.dec_conv_3 = nn.Sequential(
-            nn.Conv2d(cfg["dec_conv_3_ch"], cfg["dec_conv_2_ch"], (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
+
+        self.dec_conv_4 = nn.Sequential(
+            nn.Conv2d(cfg["dec_conv_4_ch"], cfg["dec_conv_2_ch"], (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
                       padding=(get_padding(cfg["conv_ker"]),get_padding(cfg["conv_ker"])), bias=False),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(cfg["dec_conv_2_ch"]),
-            nn.Dropout(p=cfg["dropRate"])
-        )
-        self.dec_conv_4 = nn.Sequential(
-            nn.Conv2d(cfg["dec_conv_4_ch"], cfg["dec_conv_3_ch"], (cfg["conv_ker"],cfg["conv_ker"]), groups=1,
-                      padding=(get_padding(cfg["conv_ker"]),get_padding(cfg["conv_ker"])), bias=False),
-            nn.ReLU(inplace=True),
-            nn.BatchNorm2d(cfg["dec_conv_3_ch"]),
             nn.Dropout(p=cfg["dropRate"])
         )
 
@@ -151,14 +138,12 @@ class resnet_2d_vae(nn.Module):
                                       dropRate=cfg["dropRate"])
         self.resx_2 = ResNeXtBottleNeck_2d(cfg["dec_conv_2_ch"], cfg["conv_ker"], cardinality=int(cfg["dec_conv_2_ch"]/cfg["cardinality_factor"]),
                                       dropRate=cfg["dropRate"])
-        self.resx_3 = ResNeXtBottleNeck_2d(cfg["dec_conv_3_ch"], cfg["conv_ker"], cardinality=int(cfg["dec_conv_3_ch"]/cfg["cardinality_factor"]),
-                                      dropRate=cfg["dropRate"])
+
         self.resnet_1 = BasicResBlock_2d(cfg["dec_conv_1_ch"], cfg["conv_ker"], n_layers=2, decode=True,
                                     dropRate=cfg["dropRate"])
         self.resnet_2 = BasicResBlock_2d(cfg["dec_conv_2_ch"], cfg["conv_ker"], n_layers=2, decode=True,
                                     dropRate=cfg["dropRate"])
-        self.resnet_3 = BasicResBlock_2d(cfg["dec_conv_3_ch"], cfg["conv_ker"], n_layers=2, decode=True,
-                                    dropRate=cfg["dropRate"])
+
         # move model to GPU
         if torch.cuda.is_available():
             self.cuda()
@@ -179,9 +164,6 @@ class resnet_2d_vae(nn.Module):
         out = self.enc_conv_2(out)
         out = self.resx_2(out)
         out = self.ds_2_2(out)
-        out = self.enc_conv_3(out)
-        out = self.resx_3(out)
-        out = self.ds_2_2(out)
         out = self.enc_conv_4(out)
         mu, log_var = torch.split(out,round(out.shape[1]/2),dim=1)
         return mu, log_var
@@ -189,9 +171,6 @@ class resnet_2d_vae(nn.Module):
 
     def decoder(self, x):
         out = self.dec_conv_4(x)
-        out = nn.functional.interpolate(out,size=(self.n_recording_chan_3,self.spk_length_3), mode='bicubic')
-        out = self.resnet_3(out)
-        out = self.dec_conv_3(out)
         out = nn.functional.interpolate(out,size=(self.n_recording_chan_2,self.spk_length_2), mode='bicubic')
         out = self.resnet_2(out)
         out = self.dec_conv_2(out)
