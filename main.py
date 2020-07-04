@@ -1,3 +1,4 @@
+
 from dataHandle import SpikeDataLoader
 from autoEncoder import Vae
 from simple_vae import simple_vae
@@ -185,17 +186,17 @@ if do_2_stage_train:
                                                   fact)))
             del vae_model
 
-do_train_simple_vae = False
+do_train_simple_vae = True
 if do_train_simple_vae:
     batch_size = 2048
     shuffle = True
     file_dirs = ["C:/DL_data"]
     file_clu_names = ["mF105_10.spk.1"]
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
-    for latent_dim in [4,8,16]:
-        for learn_rate in [1e-3, 1e-4]:  # default 1e-3
-            for weight_decay in [1e-5]:  # default 1e-4
-                for drop_rate in [0.2,0.5]:  # default 0.2
+    for drop_rate in [0.2, 0.5]:  # default 0.2
+        for latent_dim in [8,4,16]:
+            for learn_rate in [1e-3, 1e-4]:  # default 1e-3
+                for weight_decay in [1e-5]:  # default 1e-4
                     simple_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
                               "enc_conv_1_ch": 32, "enc_conv_2_ch": 64, "enc_conv_3_ch": 128, "enc_conv_4_ch": latent_dim,
                               "dec_conv_1_ch": 32, "dec_conv_2_ch": 64, "dec_conv_3_ch": 128, "dec_conv_4_ch": latent_dim,
@@ -220,10 +221,10 @@ if do_train_resnet_2d:
     file_dirs = ["C:/DL_data"]
     file_clu_names = ["mF105_10.spk.1"]
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
-    for latent_dim in [4,8,16]:
-        for learn_rate in [1e-3, 1e-4]:  # default 1e-3
-            for weight_decay in [1e-5]:  # default 1e-4
-                for drop_rate in [0.2,0.5]:  # default 0.2
+    for drop_rate in [0.2, 0.5]:  # default 0.2
+        for latent_dim in [8,4,16]:
+            for learn_rate in [1e-3, 1e-4]:  # default 1e-3
+                for weight_decay in [1e-5]:  # default 1e-4
                     resnet_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
                               "enc_conv_1_ch": 32, "enc_conv_2_ch": 64, "enc_conv_3_ch": 128, "enc_conv_4_ch": latent_dim,
                               "dec_conv_1_ch": 32, "dec_conv_2_ch": 64, "dec_conv_3_ch": 128, "dec_conv_4_ch": latent_dim,
@@ -256,10 +257,10 @@ if do_train_resnet_2d_v2:
     file_dirs = ["C:/DL_data"]
     file_clu_names = ["mF105_10.spk.1"]
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=batch_size, shuffle=shuffle)
-    for latent_dim in [4,8,16]:
-        for learn_rate in [1e-3, 1e-4]:  # default 1e-3
-            for weight_decay in [1e-5]:  # default 1e-4
-                for drop_rate in [0.2,0.5]:  # default 0.2
+    for drop_rate in [0.2, 0.5]:  # default 0.2
+        for latent_dim in [8,4,16]:
+            for learn_rate in [1e-3, 1e-4]:  # default 1e-3
+                for weight_decay in [1e-5]:  # default 1e-4
                     resnet_cfg = {"n_channels": data_loader.N_CHANNELS_OUT, "spk_length": data_loader.N_SAMPLES,
                               "enc_conv_1_ch": 4, "enc_conv_2_ch": 16, "enc_conv_3_ch": 64, "enc_conv_4_ch": latent_dim,
                               "dec_conv_1_ch": 4, "dec_conv_2_ch": 16, "dec_conv_3_ch": 64, "dec_conv_4_ch": latent_dim,
