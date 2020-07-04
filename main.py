@@ -346,7 +346,7 @@ if do_search_resnet_2d_v2:
         torch.manual_seed(0)
         np.random.seed(0)
         data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=2048, shuffle=False)
-        vae_model = Vae.load_vae_model(model_list[i_model])
+        vae_model = resnet_2d_vae_v2.load_vae_model(model_list[i_model])
         feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e4)
 
         unique_classes, class_counts = np.unique(classes, return_counts=True)
