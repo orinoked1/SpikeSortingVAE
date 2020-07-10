@@ -255,7 +255,7 @@ class resnet_2d_vae_v2(nn.Module):
                 recon_spike = recon_spike.cpu().detach().numpy().squeeze(axis=0)
                 show_two_spikes(spike, recon_spike.squeeze())
 
-    def forward_encoder(self, train_loader, n_spikes):
+    def forward_encoder(self, train_loader, n_spikes, return_mu=True, return_spk=True):
         with torch.no_grad():
             self.eval()
             for i_batch, (spikes, labels) in enumerate(train_loader):
@@ -263,18 +263,22 @@ class resnet_2d_vae_v2(nn.Module):
                     spikes = spikes.cuda()
                 curr_enc_mu = self.encoder(spikes)[0].cpu().detach().numpy()
                 curr_label = labels.detach().numpy()
+                curr_idxs = train_loader.sampler[train_loader._index - train_loader.batch_size:train_loader._index]
+
                 if i_batch == 0:
-                    all_spk = spikes.cpu().detach().numpy()
+                    all_spk_idx = curr_idxs
                     enc_mu = curr_enc_mu
                     all_label = curr_label
                 else:
-                    enc_mu = np.concatenate((enc_mu, curr_enc_mu), axis=0)
+                    if return_mu:
+                        enc_mu = np.concatenate((enc_mu, curr_enc_mu), axis=0)
                     all_label = np.concatenate((all_label, curr_label), axis=0)
-                    all_spk = np.concatenate((all_spk, spikes.cpu().detach().numpy()), axis=0)
+                    if return_spk:
+                        all_spk_idx = np.concatenate((all_spk_idx, curr_idxs), axis=0)
                 if enc_mu.shape[0] > n_spikes:
                     break
             train_loader.reset()
-            return enc_mu, all_label, all_spk
+            return enc_mu, all_label, all_spk_idx
 
     def calc_means(self, data_loader):
         all_sample = torch.tensor(())
