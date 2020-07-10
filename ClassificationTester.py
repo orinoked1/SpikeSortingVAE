@@ -8,10 +8,14 @@ from sklearn.metrics import calinski_harabasz_score
 from sklearn.metrics.cluster import contingency_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.manifold import TSNE
+import sys
+from scipy.stats import chi2
 
 
 class ClassificationTester(object):
-    def __init__(self, spikes, labels, use_pca, n_init=5, max_iter=100):
+    def __init__(self, spikes, labels, use_pca, n_init=5, max_iter=100, name='class_tester', good_clusters=[]):
+        self.name = name
+        self.good_clusters = good_clusters
         self.n_init = n_init
         self.max_iter = max_iter
         if len(spikes.shape) == 3:
@@ -44,10 +48,12 @@ class ClassificationTester(object):
         self.gmm, self.gmm_classes = self.fit_gmm()
         self.gmm_classes = fit_labels(np.copy(self.labels), self.gmm_classes)
         self.gmm_acc = accuracy_score(self.labels, self.gmm_classes)
+        self.L_ratio = self.calc_L_ratio()
         self.DBS = davies_bouldin_score(self.features, self.labels)  # the lower the better
         self.CHS = calinski_harabasz_score(self.features, self.labels)  # the higher the better?
         # self.SS = silhouette_score(self.features, self.labels)  # the higher the better
         self.gmm_pairwise_acc = self.fit_gmm_pairwise()
+        self.write_class_res()
         a = 1
 
     def calc_mu_sigma(self):
@@ -58,7 +64,9 @@ class ClassificationTester(object):
             label = self.unique_classes[i_class]
             mu[:, i_class] = np.mean(self.features[self.labels == label, :], axis=0)
             sigma[:, :, i_class] = np.cov(self.features[self.labels == label, :].T)
-            inv_sigma[:, :, i_class] = np.linalg.inv(sigma[:, :, i_class].squeeze())
+            if np.linalg.cond(sigma[:, :, i_class].squeeze()) < 1 / sys.float_info.epsilon:
+                inv_sigma[:, :, i_class] = np.linalg.inv(sigma[:, :, i_class].squeeze())
+
         return mu, sigma, inv_sigma
 
     def calc_ID(self):
@@ -71,8 +79,27 @@ class ClassificationTester(object):
             mahal_dist = spatial.distance.cdist(mu, noise_spikes, metric='mahalanobis',
                                                 VI=self.inv_sigma[:, :, i_class].squeeze()).squeeze() ** 2
             mahal_dist = np.sort(mahal_dist)
-            ID[i_class] = mahal_dist[self.class_counts[i_class]]
+            if np.all(self.inv_sigma[:, :, i_class] == 0):
+                ID[i_class]= np.inf
+            else:
+                ID[i_class] = mahal_dist[self.class_counts[i_class]]
         return ID
+
+    def calc_L_ratio(self):
+        L_ratio = np.zeros(self.n_classes)
+        for i_class in range(len(self.unique_classes)):
+            label = self.unique_classes[i_class]
+            noise_spikes = self.features[self.labels != label, :]
+            mu = self.mu[:, i_class].T
+            mu = mu[None, :]
+            sqr_mahal_dist = spatial.distance.cdist(mu, noise_spikes, metric='mahalanobis',
+                                                VI=self.inv_sigma[:, :, i_class].squeeze()).squeeze() ** 2
+            n_c= self.class_counts[i_class]
+            if np.all(self.inv_sigma[:, :, i_class] == 0):
+                L_ratio[i_class]= 0
+            else:
+                L_ratio[i_class] = np.sum(1- chi2.cdf(sqr_mahal_dist,mu.size))/n_c
+        return L_ratio
 
     def fit_gmm(self):
         gmm = GaussianMixture(n_components=self.n_classes, n_init=self.n_init, max_iter=self.max_iter)
@@ -197,6 +224,15 @@ class ClassificationTester(object):
         plt.subplots_adjust(left=0.03, right=0.97, top=0.97, bottom=0.03, hspace=0.3)
         plt.show()
         a = 1
+    def write_class_res(self):
+        good_clusters = np.zeros_like(self.unique_classes, dtype='bool')
+        good_clusters[np.isin(self.unique_classes,self.good_clusters)] = True
+        classification_res = np.concatenate((self.unique_classes[:,None],
+                                             self.class_counts[:,None],
+                                             good_clusters[:,None],
+                                             self.ID[:,None],
+                                             self.L_ratio[:,None]),1)
+        np.savetxt(self.name + ".csv", classification_res, delimiter=",",header='class_name,n_spikes,good_class,ID,L_ratio')
 
 
 def fit_labels(gt_labels, tested_labels):

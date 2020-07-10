@@ -62,12 +62,13 @@ if do_search:
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
-        classifier2 = ClassificationTester(feat, classes, use_pca=False)
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model],good_clusters=data_loader.good_clusters)
         print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
         if classifier2.gmm_acc > max_acc:
             max_acc = classifier2.gmm_acc
             best_model = i_model
 
+    classifier2 = ClassificationTester(spk_data, classes, use_pca=False, name='pca',good_clusters=data_loader.good_clusters)
 
 do_full_eval = False
 if do_full_eval:
