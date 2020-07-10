@@ -67,6 +67,9 @@ class SpikeDataLoader(object):
             self.clu_files_arr=np.concatenate((self.clu_files_arr,curr_clu),axis=0)
             self.clu_files_arr_idx=np.concatenate((self.clu_files_arr_idx,curr_clu_idx),axis=0)
             self.file_switch[i_file] = curr_clu.size
+            map_file = "map" + clu_file[:-4].replace(".clu."+str(shank),".npy")
+            full_map_table = np.load(os.path.join(file_dirs[i_file], map_file))
+            self.good_clusters = full_map_table[full_map_table[:,1]==shank,2]
         self.spk_data = np.moveaxis(self.spk_data,-1,0)
         self.file_switch = self.file_switch.cumsum()
         self.transform = transform
