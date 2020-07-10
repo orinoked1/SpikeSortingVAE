@@ -226,13 +226,18 @@ class ClassificationTester(object):
         a = 1
     def write_class_res(self):
         good_clusters = np.zeros_like(self.unique_classes, dtype='bool')
+        DBS = np.zeros_like(self.unique_classes)+self.DBS
+        CHS = np.zeros_like(self.unique_classes)+self.CHS
         good_clusters[np.isin(self.unique_classes,self.good_clusters)] = True
         classification_res = np.concatenate((self.unique_classes[:,None],
                                              self.class_counts[:,None],
                                              good_clusters[:,None],
                                              self.ID[:,None],
-                                             self.L_ratio[:,None]),1)
-        np.savetxt(self.name + ".csv", classification_res, delimiter=",",header='class_name,n_spikes,good_class,ID,L_ratio')
+                                             self.L_ratio[:,None],
+                                             DBS[:,None],
+                                             CHS[:,None],
+                                             ),1)
+        np.savetxt(self.name + ".csv", classification_res, delimiter=",",header='class_name,n_spikes,good_class,ID,L_ratio,DBS,CHS')
 
 
 def fit_labels(gt_labels, tested_labels):

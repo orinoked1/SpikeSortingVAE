@@ -290,15 +290,16 @@ if do_train_resnet_2d_v2:
 do_search_simple_vae = False
 if do_search_simple_vae:
     max_acc = 0
-    model_list = glob.glob(os.path.join(os.getcwd(), 'simple_vae*.pt'))
+    model_list = glob.glob(os.path.join(os.getcwd(), 'ver1/simple_vae*.pt'))
+    file_dirs = ["C:/DL_data"]
+    file_clu_names = ["mF105_10.spk.2", ]
+    torch.manual_seed(0)
+    np.random.seed(0)
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
     for i_model in range(len(model_list)):
-        file_dirs =  ["C:/DL_data"]
-        file_clu_names = ["mF105_10.spk.2", ]
-        torch.manual_seed(0)
-        np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        data_loader.reset()
         vae_model = simple_vae.load_vae_model(model_list[i_model])
-        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e4)
+        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e9)
 
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
@@ -306,24 +307,25 @@ if do_search_simple_vae:
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
-        classifier2 = ClassificationTester(feat, classes, use_pca=False)
-        print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
-        if classifier2.gmm_acc > max_acc:
-            max_acc = classifier2.gmm_acc
-            best_model = i_model
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model],good_clusters=data_loader.good_clusters)
+        # print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
+        # if classifier2.gmm_acc > max_acc:
+        #     max_acc = classifier2.gmm_acc
+        #     best_model = i_model
 
-do_search_resnet_2d = False
+do_search_resnet_2d = True
 if do_search_resnet_2d:
-    model_list = glob.glob(os.path.join(os.getcwd(), 'resnet_vae_stage_*.pt'))
+    model_list = glob.glob(os.path.join(os.getcwd(), 'ver1/resnet_vae_stage_*.pt'))
     max_acc = 0
+    file_dirs = ["C:/DL_data"]
+    file_clu_names = ["mF105_10.spk.2", ]
+    torch.manual_seed(0)
+    np.random.seed(0)
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
     for i_model in range(len(model_list)):
-        file_dirs = ["C:/DL_data"]
-        file_clu_names = ["mF105_10.spk.2", ]
-        torch.manual_seed(0)
-        np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        data_loader.reset()
         vae_model = resnet_2d_vae.load_vae_model(model_list[i_model])
-        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e5)
+        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e9)
 
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
@@ -331,25 +333,26 @@ if do_search_resnet_2d:
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
-        classifier2 = ClassificationTester(feat, classes, use_pca=False)
-        print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
-        if classifier2.gmm_acc > max_acc:
-            max_acc = classifier2.gmm_acc
-            best_model = i_model
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model],good_clusters=data_loader.good_clusters)
+        # print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
+        # if classifier2.gmm_acc > max_acc:
+        #     max_acc = classifier2.gmm_acc
+        #     best_model = i_model
 
 
-do_search_resnet_2d_v2 = False
+do_search_resnet_2d_v2 = True
 if do_search_resnet_2d_v2:
-    model_list = glob.glob(os.path.join(os.getcwd(), 'resnet_vaeV2_stage*.pt'))
+    model_list = glob.glob(os.path.join(os.getcwd(), 'ver1/resnet_vaeV2_stage*.pt'))
     max_acc = 0
+    file_dirs = ["C:/DL_data"]
+    file_clu_names = ["mF105_10.spk.2", ]
+    torch.manual_seed(0)
+    np.random.seed(0)
+    data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
     for i_model in range(len(model_list)):
-        file_dirs = ["C:/DL_data"]
-        file_clu_names = ["mF105_10.spk.2", ]
-        torch.manual_seed(0)
-        np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        data_loader.reset()
         vae_model = resnet_2d_vae_v2.load_vae_model(model_list[i_model])
-        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e4)
+        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e9)
 
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
@@ -357,9 +360,9 @@ if do_search_resnet_2d_v2:
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
-        classifier2 = ClassificationTester(feat, classes, use_pca=False)
-        print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
-        if classifier2.gmm_acc > max_acc:
-            max_acc = classifier2.gmm_acc
-            best_model = i_model
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model],good_clusters=data_loader.good_clusters)
+        # print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
+        # if classifier2.gmm_acc > max_acc:
+        #     max_acc = classifier2.gmm_acc
+        #     best_model = i_model
 
