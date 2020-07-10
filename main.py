@@ -47,13 +47,11 @@ if do_search:
         file_clu_names = ["mF105_10.spk.2", ]
         torch.manual_seed(0)
         np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=500, shuffle=False)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
         vae_model = Vae.load_vae_model(model_list[i_model])
-        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e5)
-
+        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e5)
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
-        spk_data = spk_data[(classes != small_labels).all(axis=1), :, :]
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
@@ -62,6 +60,8 @@ if do_search:
         if classifier2.gmm_acc > max_acc:
             max_acc = classifier2.gmm_acc
             best_model = i_model
+    spk_data = data_loader.spk_data[all_spk_idx]
+    spk_data = spk_data[(classes != small_labels).all(axis=1), :, :]
 
     classifier2 = ClassificationTester(spk_data, classes, use_pca=False, name='pca',good_clusters=data_loader.good_clusters)
 
