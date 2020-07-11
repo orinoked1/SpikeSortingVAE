@@ -38,32 +38,34 @@ if do_train:
                         plt.savefig(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
                         plt.clf()
                         vae_model.save_model(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
-do_search = False
+do_search = True
 if do_search:
     max_acc = 0
-    model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
+    model_list = glob.glob(os.path.join(os.getcwd(), 'models', '*.pt'))
+    # model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
     for i_model in range(len(model_list)):
-        file_dirs = [os.path.join(os.getcwd(), 'example_data')]
+        file_dirs = [os.path.join(os.getcwd(), 'data')]
         file_clu_names = ["mF105_10.spk.2", ]
         torch.manual_seed(0)
         np.random.seed(0)
-        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=500, shuffle=False)
+        print(model_list[i_model])
         vae_model = Vae.load_vae_model(model_list[i_model])
-        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e5)
+        feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e6)
+
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
+        spk_data = spk_data[(classes != small_labels).all(axis=1), :, :]
         feat = feat[(classes != small_labels).all(axis=1), :]
         classes = classes[(classes != small_labels).all(axis=1)]
 
-        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model],good_clusters=data_loader.good_clusters)
+        # classifier2 = ClassificationTester(feat, classes, use_pca=False, model_name = model_list[i_model])
+        classifier2 = ClassificationTester(spk_data, classes, use_pca=False, model_name = 'PCA')
         print('model {} had acc of {}'.format(model_list[i_model], classifier2.gmm_acc))
         if classifier2.gmm_acc > max_acc:
             max_acc = classifier2.gmm_acc
             best_model = i_model
-    spk_data = data_loader.spk_data[all_spk_idx]
-    spk_data = spk_data[(classes != small_labels).all(axis=1), :, :]
 
-    classifier2 = ClassificationTester(spk_data, classes, use_pca=False, name='pca',good_clusters=data_loader.good_clusters)
 
 do_full_eval = False
 if do_full_eval:
