@@ -43,11 +43,25 @@ for file in gt_files:
     name = file.name
     F = -1
 
+    ## Capping
+    f_capp = data[['L_ratio', 'ID']]
+    f_capp.loc[f_capp['L_ratio'] < 0.1, 'L_ratio'] = 0.1
+    f_capp.loc[f_capp['ID'] > 50, 'ID'] = 50
+    mean_capp_id = np.mean(f_capp.ID)
+    sd_capp_id = np.std(f_capp.ID)
+    mean_capp_lr = np.mean(f_capp.L_ratio)
+    sd_capp_lr = np.std(f_capp.L_ratio)
+
+    ## Count good clusters
+    num_good_clusters_ID = sum(f_capp['ID'] == 50)
+    num_good_clusters_LR = sum(f_capp['L_ratio'] == 0.1)
+
 
     dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F',
                           'mean_id','mean_id_change','sd_id_change',
                           'mean_l_ratio','sd_l_ratio','mean_l_ratio_change','sd_l_ratio_change',
-                          'chs','chs_change','dbs','dbs_change')
+                          'chs','chs_change','dbs','dbs_change', 'mean_capp_id', 'sd_capp_id', 
+                          'mean_capp_lr', 'sd_capp_lr', 'num_good_clusters_ID', 'num_good_clusters_LR')
     cur_df = pd.DataFrame(dict_var, index=[0])
     summery =summery.append(cur_df)
 
@@ -104,6 +118,21 @@ for file in file_list:
             curr_gt = train_gt
         else:
             curr_gt = test_gt
+    
+    ## Capping
+    f_capp = data[['L_ratio', 'ID']]
+    f_capp.loc[f_capp['L_ratio'] < 0.1, 'L_ratio'] = 0.1
+    f_capp.loc[f_capp['ID'] > 50, 'ID'] = 50
+    mean_capp_id = np.mean(f_capp.ID)
+    sd_capp_id = np.std(f_capp.ID)
+    mean_capp_lr = np.mean(f_capp.L_ratio)
+    sd_capp_lr = np.std(f_capp.L_ratio)
+
+    ## Count good clusters
+    num_good_clusters_ID = sum(f_capp['ID'] == 50)
+    num_good_clusters_LR = sum(f_capp['L_ratio'] == 0.1)
+
+
     mean_id = np.mean(data.ID)
     sd_id = np.std(data.ID)
     mean_l_ratio = np.mean(data.L_ratio)
@@ -130,7 +159,8 @@ for file in file_list:
     dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F',
                           'mean_id','mean_id_change','sd_id_change',
                           'mean_l_ratio','sd_l_ratio','mean_l_ratio_change','sd_l_ratio_change',
-                          'chs','chs_change','dbs','dbs_change')
+                          'chs','chs_change','dbs','dbs_change', 'mean_capp_id', 'sd_capp_id', 
+                          'mean_capp_lr', 'sd_capp_lr', 'num_good_clusters_ID', 'num_good_clusters_LR')
     cur_df = pd.DataFrame(dict_var, index=[0])
     summery =summery.append(cur_df)
 summery.to_csv('summery.csv')
