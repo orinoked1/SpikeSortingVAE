@@ -14,13 +14,20 @@ for file in gt_files:
     if file.name.endswith("all.csv"):
         if file.name.find("fet.1")>0:
             train_all_gt = data
+            LD = 44
         else:
             test_all_gt = data
+            LD = 36
     else:
         if file.name.find("fet.1")>0:
             train_gt = data
+            LD = 44
         else:
             test_gt = data
+            LD = 36
+    if file.name.find("_C")>0:
+        C = file.name[file.name.find("_C")+2:]
+        LD = float(C[:1])*4
     mean_id = np.mean(data.ID)
     sd_id = np.std(data.ID)
     mean_l_ratio = np.mean(data.L_ratio)
@@ -33,7 +40,6 @@ for file in gt_files:
     sd_l_ratio_change = 1
     chs_change = 1
     dbs_change = 1
-    LD=36
     DO=-1
     LR=-1
     include_0 = file.name.endswith("all.csv")>0
@@ -42,7 +48,7 @@ for file in gt_files:
     train = file.name.find("fet.1")>0
     name = file.name
     F = -1
-
+    C = -1
     ## Capping
     f_capp = data[['L_ratio', 'ID']]
     f_capp.loc[f_capp['L_ratio'] < 0.1, 'L_ratio'] = 0.1
@@ -57,7 +63,7 @@ for file in gt_files:
     num_good_clusters_LR = sum(f_capp['L_ratio'] == 0.1)
 
 
-    dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F',
+    dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F','C',
                           'mean_id','mean_id_change','sd_id_change',
                           'mean_l_ratio','sd_l_ratio','mean_l_ratio_change','sd_l_ratio_change',
                           'chs','chs_change','dbs','dbs_change', 'mean_capp_id', 'sd_capp_id', 
@@ -69,24 +75,29 @@ file_list = list(Path(r"D:\Drive\DL_project_OD\reports").rglob("*vae*.csv"))
 for file in file_list:
     if file.name.startswith("vae"):
         channels_dependent = True
-        if file.name.startswith("vaeStage2"):
-            stage = 2
-        else:
-            stage = 1
+        S = file.name[file.name.find("Stage")+5:]
+        stage = int(S[:1])
     else:
         channels_dependent = False
-        stage = 1
+        S = file.name[file.name.find("stage_")+6:]
+        stage = int(S[:1])
     LD = file.name[file.name.find("_LD")+3:]
     LD = int(LD[:LD.find("_")])
     DO = file.name[file.name.find("_DR")+3:]
-    if DO.find("_F")>0:
-        DO = float(DO[:DO.find("_F")])
+    if DO.find("_")>0:
+        DO = float(DO[:DO.find("_")])
     else:
         DO = float(DO[:DO.find(".pt")])
     if file.name.find("_F")>0:
         F = file.name[file.name.find("_F")+2:]
         F = float(F[:F.find(".pt")])
-
+    else:
+        F=0
+    if file.name.find("_C")>0:
+        C = file.name[file.name.find("_C")+2:]
+        C = float(C[:1])
+    else:
+        C=9
     LR = file.name[file.name.find("_LR")+3:]
     LR = float(LR[:LR.find("_")])
     if file.name.endswith("all.csv"):
@@ -156,7 +167,7 @@ for file in file_list:
     name = file.name
 
 
-    dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F',
+    dict_var = createDict('name','train','stage','include_0','architecture','LD','LR','DO','F','C',
                           'mean_id','mean_id_change','sd_id_change',
                           'mean_l_ratio','sd_l_ratio','mean_l_ratio_change','sd_l_ratio_change',
                           'chs','chs_change','dbs','dbs_change', 'mean_capp_id', 'sd_capp_id', 
