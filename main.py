@@ -44,6 +44,34 @@ if do_train:
                         plt.clf()
                         vae_model.save_model(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
 do_search = False
+classify_gt=False
+if classify_gt:
+    fet_1 = np.load(r'C:\DL_data\mF105_10.fet.2.npy')
+    fet_1 = fet_1[:,:36]
+    clu_data = scipy.io.loadmat(r'C:\DL_data\mF105_10.clu.2.mat')
+    clu = clu_data['clu']
+    clu = clu[1:]
+    full_map_table = np.load( r'C:\DL_data\mapmF105_10.npy')
+    good_clusters = full_map_table[full_map_table[:, 1] == 2, 2]
+
+    classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.2_all",good_clusters=good_clusters)
+    fet_1 = fet_1[clu.squeeze()>1,:]
+    clu = clu[clu.squeeze()>1,:]
+    classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.2",good_clusters=good_clusters)
+    fet_1 = np.load(r'C:\DL_data\mF105_10.fet.1.npy')
+    fet_1 = fet_1[:,:36]
+    clu_data = scipy.io.loadmat(r'C:\DL_data\mF105_10.clu.1.mat')
+    clu = clu_data['clu']
+    clu = clu[1:]
+    full_map_table = np.load( r'C:\DL_data\mapmF105_10.npy')
+    good_clusters = full_map_table[full_map_table[:, 1] == 2, 2]
+
+    classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.1_all",good_clusters=good_clusters)
+    fet_1 = fet_1[clu.squeeze()>1,:]
+    clu = clu[clu.squeeze()>1,:]
+    classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.1",good_clusters=good_clusters)
+    a= 1
+
 if do_search:
     max_acc = 0
     model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
