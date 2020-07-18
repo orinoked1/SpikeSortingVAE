@@ -19,6 +19,7 @@ class ClassificationTester(object):
         self.n_init = n_init
         self.max_iter = max_iter
         if len(spikes.shape) == 3:
+            # original spike data of size [#spikes X #recording_channels X #time_samples]
             n_samples = spikes.shape[0]
             n_channels = spikes.shape[1]
             self.features = np.zeros((n_samples, n_channels * 3))
@@ -29,8 +30,12 @@ class ClassificationTester(object):
                 pca = PCA(n_components=3)
                 self.features[:, i_channel * 3:(i_channel + 1) * 3] = pca.fit_transform(
                     spikes[:, i_channel, :].squeeze())
-        else:
+        elif len(spikes.shape) == 2:
+            # 1D feature space of size [#spikes X #featues]
             self.features = spikes
+        elif len(spikes.shape) == 4:
+            # 2D feature space of size [#spikes X #2d_channels X #recording_channels (at encoder center) X #time_samples(at encoder center)]
+            self.features = spikes.reshape(spikes.shape[0],-1)
         # self.features = StandardScaler().fit_transform(self.features)
         self.n_samples = self.features.shape[0]
         self.n_features = self.features.shape[1]
@@ -221,13 +226,18 @@ class ClassificationTester(object):
         a = 1
     def write_class_res(self):
         good_clusters = np.zeros_like(self.unique_classes, dtype='bool')
+        DBS = np.zeros_like(self.unique_classes)+self.DBS
+        CHS = np.zeros_like(self.unique_classes)+self.CHS
         good_clusters[np.isin(self.unique_classes,self.good_clusters)] = True
         classification_res = np.concatenate((self.unique_classes[:,None],
                                              self.class_counts[:,None],
                                              good_clusters[:,None],
                                              self.ID[:,None],
-                                             self.L_ratio[:,None]),1)
-        np.savetxt(self.name + ".csv", classification_res, delimiter=",",header='class_name,n_spikes,good_class,ID,L_ratio')
+                                             self.L_ratio[:,None],
+                                             DBS[:,None],
+                                             CHS[:,None],
+                                             ),1)
+        np.savetxt(self.name + ".csv", classification_res, delimiter=",",header='class_name,n_spikes,good_class,ID,L_ratio,DBS,CHS')
 
 
 def fit_labels(gt_labels, tested_labels):
