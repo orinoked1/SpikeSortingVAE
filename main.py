@@ -1,10 +1,9 @@
 
 from dataHandle import SpikeDataLoader
 from autoEncoder import Vae
-from simple_vae import simple_vae
+from simple_vae import SimpleVae
 from resnet_2d_vae import resnet_2d_vae
 from resnet_2d_vae_v2 import resnet_2d_vae_v2
-
 from ClassificationTester import ClassificationTester
 import os
 import torch
@@ -12,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import pickle
+import scipy
 
 
 do_train = False
@@ -236,7 +236,7 @@ if do_train_simple_vae:
                     torch.manual_seed(0)
                     np.random.seed(0)
                     # training
-                    vae_model = simple_vae(simple_cfg)
+                    vae_model = SimpleVae(simple_cfg)
                     loss_array = vae_model.train_data_loader(data_loader)
                     plt.plot(loss_array)
                     plt.savefig(os.path.join(os.getcwd(),'simple_vae_stage_1_LD{}_LR{:.0E}_WD{:.0E}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, drop_rate)))
@@ -326,8 +326,8 @@ if do_search_simple_vae:
     data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
     for i_model in range(len(model_list)):
         data_loader.reset()
-        vae_model = simple_vae.load_vae_model(model_list[i_model])
         feat, classes, spk_data = vae_model.forward_encoder(data_loader, 1e9)
+        vae_model = SimpleVae.load_vae_model(model_list[i_model])
 
         unique_classes, class_counts = np.unique(classes, return_counts=True)
         small_labels = unique_classes[class_counts < 70]
