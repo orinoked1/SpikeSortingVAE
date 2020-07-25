@@ -200,7 +200,7 @@ class ClassificationTester(object):
         th = 0.8
         N = n_classes * 10
         step = 5
-        minN = 50
+        minN = 75
         prev_acc = []
         model_per_csv_name = 'Model performance_5e5_max_iter=20_n_init=5,25.07.csv'
         if not os.path.isfile(model_per_csv_name):
@@ -211,7 +211,7 @@ class ClassificationTester(object):
         for i_n_class in range(n_classes, N, step):
             spikes_in_uni_classes = 0
             spike_th = ((self.features.shape[0]) / i_n_class) * 0.05
-            gmm = GaussianMixture(n_components=i_n_class, n_init=1, max_iter=20)
+            gmm = GaussianMixture(n_components=i_n_class, n_init=5, max_iter=100)
             gmm.fit(self.features)
             gmm_classes = gmm.predict(self.features)
             gt_labels = np.copy(self.labels)
