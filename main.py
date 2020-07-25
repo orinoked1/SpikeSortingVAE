@@ -12,6 +12,25 @@ import matplotlib.pyplot as plt
 import glob
 import pickle
 import scipy
+final_res = True
+if final_res:
+    max_acc = 0
+    model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+', 'vaeStage3_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
+    for i_model in range(len(model_list)):
+        file_dirs = ["C:/DL_data"]
+        file_clu_names = ["mF105_10.spk.4", ]
+        torch.manual_seed(0)
+        np.random.seed(0)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        vae_model = Vae.load_vae_model(model_list[i_model])
+        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+        unique_classes, class_counts = np.unique(classes, return_counts=True)
+        # small_labels = unique_classes[class_counts < 70]
+        # feat = feat[(classes != small_labels).all(axis=1), :]
+        # classes = classes[(classes != small_labels).all(axis=1)]
+
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model]+'final',good_clusters=data_loader.good_clusters)
+        classifier2.plot_2d_pca(-1)
 
 
 do_train = False
@@ -43,7 +62,6 @@ if do_train:
                         plt.savefig(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.png'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
                         plt.clf()
                         vae_model.save_model(os.path.join(os.getcwd(),'vae_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}.pt'.format(latent_dim, learn_rate, weight_decay, shuffle_channels, drop_rate)))
-do_search = False
 classify_gt=False
 if classify_gt:
     fet_1 = np.load(r'C:\DL_data\mF105_10.fet.2.npy')
@@ -71,7 +89,8 @@ if classify_gt:
     clu = clu[clu.squeeze()>1,:]
     classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.1",good_clusters=good_clusters)
     a= 1
-
+    
+do_search = True
 if do_search:
     max_acc = 0
     model_list = glob.glob(os.path.join(os.getcwd(), 'vae_LD27*.pt'))
