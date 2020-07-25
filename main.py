@@ -55,7 +55,7 @@ if final_res:
         classifier2.plot_2d_pca(-1)
 
     fet_1 = np.load(r'C:\DL_data\mF105_10.fet.4.npy')
-    fet_1 = fet_1[:,4:36]
+    fet_1 = fet_1[:,:36]
     clu_data = scipy.io.loadmat(r'C:\DL_data\mF105_10.clu.4.mat')
     clu = clu_data['clu']
     clu = clu[1:]
@@ -69,7 +69,7 @@ if final_res:
 final_acc = True
 if final_acc:
     data_idx = np.genfromtxt(r'C:\git\SpikeSortingVAE\25.07 -PCA- 500000 sampling index.csv', delimiter=',')
-
+    data_idx = data_idx.astype('int')
     max_acc = 0
     model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+',
                                         'vaeStage3_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
@@ -82,6 +82,9 @@ if final_acc:
         data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
         vae_model = Vae.load_vae_model(model_list[i_model])
         feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+        data_idx = data_idx[data_idx<feat.shape[0]]
+        feat = feat[data_idx,:]
+        classes = classes[data_idx,:]
 
         classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model] + 'final',
                                            good_clusters=data_loader.good_clusters)
@@ -95,6 +98,9 @@ if final_acc:
         data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
         vae_model = Vae.load_vae_model(model_list[i_model])
         feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+        data_idx = data_idx[data_idx<feat.shape[0]]
+        feat = feat[data_idx,:]
+        classes = classes[data_idx,:]
 
         classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model] + 'final',
                                            good_clusters=data_loader.good_clusters)
