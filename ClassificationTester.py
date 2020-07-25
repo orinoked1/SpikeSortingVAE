@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA
 from scipy import spatial
 import matplotlib.pyplot as plt
@@ -10,6 +11,8 @@ from sklearn.metrics import accuracy_score
 from sklearn.manifold import TSNE
 import sys
 from scipy.stats import chi2
+from collections import Counter
+import os.path
 
 
 class ClassificationTester(object):
@@ -45,14 +48,15 @@ class ClassificationTester(object):
         self.n_classes = len(self.unique_classes)
         self.mu, self.sigma, self.inv_sigma = self.calc_mu_sigma()
         self.ID = self.calc_ID()
-        self.gmm, self.gmm_classes = self.fit_gmm()
-        self.gmm_classes = fit_labels(np.copy(self.labels), self.gmm_classes)
-        self.gmm_acc = accuracy_score(self.labels, self.gmm_classes)
-        self.L_ratio = self.calc_L_ratio()
         self.DBS = davies_bouldin_score(self.features, self.labels)  # the lower the better
         self.CHS = calinski_harabasz_score(self.features, self.labels)  # the higher the better?
+        # self.gmm, self.gmm_classes = self.fit_gmm()
+        # self.gmm_classes = fit_labels(np.copy(self.labels), self.gmm_classes)
+        # self.gmm_acc = accuracy_score(self.labels, self.gmm_classes)
+        # self.L_ratio = self.calc_L_ratio()
+        self.n_classes_for_gmm = self.n_classes_to_fit_gmm_using_good_labels()
         # self.SS = silhouette_score(self.features, self.labels)  # the higher the better
-        self.gmm_pairwise_acc = self.fit_gmm_pairwise()
+        # self.gmm_pairwise_acc = self.fit_gmm_pairwise()
         self.write_class_res()
         a = 1
 
@@ -123,6 +127,134 @@ class ClassificationTester(object):
                     gmm_classes = fit_labels(labels, gmm_classes)
                     pairwise_acc[i_class_1, i_class_2] = accuracy_score(labels, gmm_classes)
         return pairwise_acc
+
+    def n_classes_to_fit_gmm(self):
+        n_classes = self.n_classes
+        th = 0.8
+        N = n_classes * 10
+        step = 5
+        minN = 50
+        prev_acc = []
+        model_per_csv_name = 'Model performance_1e5_max_iter=20.csv'
+        if not os.path.isfile(model_per_csv_name):
+            cols = ['Model', 'Clusters', 'accuracy', 'per_uniform_class', 'mean_uni_mat', 'spikes_in_uni_classes', 'per spikes in uni classes']
+            pd.DataFrame(columns=cols).to_csv(model_per_csv_name)
+
+
+        for i_n_class in range(n_classes, N, step):
+            spikes_in_uni_classes = 0
+            spike_th = ((self.features.shape[0]) / i_n_class) * 0.05
+            gmm = GaussianMixture(n_components=i_n_class, n_init=1, max_iter=20)
+            gmm.fit(self.features)
+            gmm_classes = gmm.predict(self.features)
+            gt_labels = np.copy(self.labels)
+            gt_unique_classes = np.unique(gt_labels)
+            gt_labels, gmm_classes = self.filter_small_clusters_spikes(spike_th, gt_labels, gmm_classes)
+            tested_unique_classes, tested_classes_count = np.unique(gmm_classes, return_counts=True)
+            idx = np.argsort(-tested_classes_count)
+            tested_unique_classes = tested_unique_classes[idx]
+            con_mat = contingency_matrix(gt_labels, gmm_classes)
+            uni_mat = np.zeros((i_n_class,1))
+            tested_labels_remap = np.copy(gmm_classes)
+            for i_class in range(len(tested_unique_classes)):
+                new_label_idx = np.argmax(con_mat[:, [tested_unique_classes[i_class]]])
+                tested_labels_remap[gmm_classes == tested_unique_classes[i_class]] = gt_unique_classes[new_label_idx]
+                uni_mat[tested_unique_classes[i_class]] = con_mat[new_label_idx, [tested_unique_classes[i_class]]] / sum(con_mat[:, [tested_unique_classes[i_class]]])
+                if uni_mat[tested_unique_classes[i_class]] > th:
+                    spikes_in_uni_classes += con_mat[new_label_idx, [tested_unique_classes[i_class]]]
+                con_mat[:, tested_unique_classes[i_class]] = -1
+                # con_mat[new_label_idx, :] = -1
+            per_uniform_class = sum(uni_mat > th) / i_n_class
+            mean_uni_mat = np.mean(uni_mat)
+            acc = accuracy_score(gt_labels, tested_labels_remap)
+            print(i_n_class, acc, per_uniform_class, mean_uni_mat, spikes_in_uni_classes, spikes_in_uni_classes /self.features.shape[0])
+            new_line = {'Model': self.name.split("\\")[-1].split('.')[0],
+                        'Clusters': [i_n_class],
+                        'accuracy': [acc],
+                        'per_uniform_class': [per_uniform_class],
+                        'mean_uni_mat': [mean_uni_mat],
+                        'spikes_in_uni_classes': [spikes_in_uni_classes],
+                        'per spikes in uni classes': [spikes_in_uni_classes /self.features.shape[0]]
+                        }
+            pd.DataFrame(new_line).to_csv(model_per_csv_name, mode='a', header=False)
+            prev_acc.append(acc)
+            if len(prev_acc) > 3 and i_n_class >= minN:
+                if np.mean([x-y for x, y in zip(prev_acc[-3:], prev_acc[-4:])]) < 0.005:
+                    return i_n_class - step * 3
+
+        return i_n_class
+
+    def filter_small_clusters_spikes(self, th, y_true, y_pred):
+        c = Counter(y_pred)
+        filter_idx = []
+        filter_idx += [np.where(c == i) for i in c if c[i] < th]
+        filter_idx = np.squeeze(filter_idx)
+        y_pred = np.delete(y_pred, filter_idx)
+        y_true = np.delete(y_true, filter_idx)
+        if len(filter_idx):
+            print(len(filter_idx), 'Spikes Deleted')
+        return y_true, y_pred
+
+    def n_classes_to_fit_gmm_using_good_labels(self):
+        n_classes = self.n_classes
+        th = 0.8
+        N = n_classes * 10
+        step = 5
+        minN = 50
+        prev_acc = []
+        model_per_csv_name = 'Model performance_5e5_max_iter=20_n_init=5,25.07.csv'
+        if not os.path.isfile(model_per_csv_name):
+            cols = ['Model', 'Clusters', 'accuracy', 'per_uniform_class', 'mean_uni_mat', 'spikes_in_uni_classes', 'per spikes in uni classes']
+            pd.DataFrame(columns=cols).to_csv(model_per_csv_name)
+
+
+        for i_n_class in range(n_classes, N, step):
+            spikes_in_uni_classes = 0
+            spike_th = ((self.features.shape[0]) / i_n_class) * 0.05
+            gmm = GaussianMixture(n_components=i_n_class, n_init=1, max_iter=20)
+            gmm.fit(self.features)
+            gmm_classes = gmm.predict(self.features)
+            gt_labels = np.copy(self.labels)
+            gt_unique_classes = np.unique(gt_labels)
+            gt_labels, gmm_classes = self.filter_small_clusters_spikes(spike_th, gt_labels, gmm_classes)
+            tested_unique_classes, tested_classes_count = np.unique(gmm_classes, return_counts=True)
+            idx = np.argsort(-tested_classes_count)
+            tested_unique_classes = tested_unique_classes[idx]
+            con_mat = contingency_matrix(gt_labels, gmm_classes)
+            uni_mat = np.zeros((i_n_class,1))
+            tested_labels_remap = np.copy(gmm_classes)
+            for i_class in range(len(tested_unique_classes)):
+                new_label_idx = np.argmax(con_mat[:, [tested_unique_classes[i_class]]])
+                tested_labels_remap[gmm_classes == tested_unique_classes[i_class]] = gt_unique_classes[new_label_idx]
+                if gt_unique_classes[new_label_idx] in self.good_clusters:
+                    uni_mat[i_class] = con_mat[new_label_idx, [tested_unique_classes[i_class]]] / sum(con_mat[:, [tested_unique_classes[i_class]]])
+                    if uni_mat[i_class] > th:
+                        spikes_in_uni_classes += con_mat[new_label_idx, [tested_unique_classes[i_class]]]
+                con_mat[:, tested_unique_classes[i_class]] = -1
+                # con_mat[new_label_idx, :] = -1
+            uni_mat = uni_mat[uni_mat>0]
+            per_uniform_class = sum(uni_mat > th) / i_n_class
+            mean_uni_mat = np.mean(uni_mat)
+            # not_good_clusters = list(set(self.unique_classes) - set(self.good_clusters))
+            good_indices = [i for i, el in enumerate(tested_labels_remap) if el in self.good_clusters]
+
+            acc = accuracy_score(gt_labels[good_indices], tested_labels_remap[good_indices])
+            print(i_n_class, acc, per_uniform_class, mean_uni_mat, spikes_in_uni_classes, spikes_in_uni_classes /self.features.shape[0])
+            new_line = {'Model': self.name.split("\\")[-1].split('.')[0],
+                        'Clusters': [i_n_class],
+                        'accuracy': [acc],
+                        'per_uniform_class': [per_uniform_class],
+                        'mean_uni_mat': [mean_uni_mat],
+                        'spikes_in_uni_classes': [spikes_in_uni_classes],
+                        'per spikes in uni classes': [spikes_in_uni_classes /self.features.shape[0]]
+                        }
+            pd.DataFrame(new_line).to_csv(model_per_csv_name, mode='a', header=False)
+            prev_acc.append(acc)
+            if len(prev_acc) > 3 and i_n_class <= minN:
+                if np.mean([x-y for x, y in zip(prev_acc[-3:], prev_acc[-4:])]) < 0.005:
+                    return i_n_class - step * 3
+
+        return i_n_class
 
     def plot_2d_pca(self, class2display=-1):
         if class2display == -1:
