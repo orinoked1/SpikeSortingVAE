@@ -12,7 +12,11 @@ import matplotlib.pyplot as plt
 import glob
 import pickle
 import scipy
-final_res = True
+import random
+import pandas as pd
+import datetime
+
+final_res = False
 if final_res:
     max_acc = 0
     model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+', 'vaeStage3_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
@@ -31,6 +35,69 @@ if final_res:
 
         classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model]+'final',good_clusters=data_loader.good_clusters)
         classifier2.plot_2d_pca(-1)
+    model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+',
+                                        'vaeStage1_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
+    for i_model in range(len(model_list)):
+        file_dirs = ["C:/DL_data"]
+        file_clu_names = ["mF105_10.spk.4", ]
+        torch.manual_seed(0)
+        np.random.seed(0)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        vae_model = Vae.load_vae_model(model_list[i_model])
+        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+        unique_classes, class_counts = np.unique(classes, return_counts=True)
+        # small_labels = unique_classes[class_counts < 70]
+        # feat = feat[(classes != small_labels).all(axis=1), :]
+        # classes = classes[(classes != small_labels).all(axis=1)]
+
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model] + 'final',
+                                           good_clusters=data_loader.good_clusters)
+        classifier2.plot_2d_pca(-1)
+
+    fet_1 = np.load(r'C:\DL_data\mF105_10.fet.4.npy')
+    fet_1 = fet_1[:,4:36]
+    clu_data = scipy.io.loadmat(r'C:\DL_data\mF105_10.clu.4.mat')
+    clu = clu_data['clu']
+    clu = clu[1:]
+    full_map_table = np.load( r'C:\DL_data\mapmF105_10.npy')
+    good_clusters = full_map_table[full_map_table[:, 1] == 4, 2]
+    fet_1 = fet_1[clu.squeeze() > 1, :]
+    clu = clu[clu.squeeze() > 1, :]
+    classifier2 = ClassificationTester(fet_1, clu, use_pca=False, name="mF105_10.fet.4", good_clusters=good_clusters)
+    classifier2.plot_2d_pca(-1)
+
+final_acc = True
+if final_acc:
+    data_idx = np.genfromtxt(r'C:\git\SpikeSortingVAE\25.07 -PCA- 500000 sampling index.csv', delimiter=',')
+
+    max_acc = 0
+    model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+',
+                                        'vaeStage3_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
+    for i_model in range(len(model_list)):
+        file_dirs = ["C:/DL_data"]
+        file_clu_names = ["mF105_10.spk.4", ]
+        torch.manual_seed(0)
+        np.random.seed(0)
+
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        vae_model = Vae.load_vae_model(model_list[i_model])
+        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model] + 'final',
+                                           good_clusters=data_loader.good_clusters)
+    model_list = glob.glob(os.path.join(r'D:\Drive\DL_project_OD\models\bbb+',
+                                        'vaeStage1_LD36_LR3E-05_WD1E-05_SDFalse_DR0.2_F60_FMC64.pt'))
+    for i_model in range(len(model_list)):
+        file_dirs = ["C:/DL_data"]
+        file_clu_names = ["mF105_10.spk.4", ]
+        torch.manual_seed(0)
+        np.random.seed(0)
+        data_loader = SpikeDataLoader(file_dirs, file_clu_names, batch_size=8192, shuffle=False)
+        vae_model = Vae.load_vae_model(model_list[i_model])
+        feat, classes, all_spk_idx = vae_model.forward_encoder(data_loader, 1e9)
+
+        classifier2 = ClassificationTester(feat, classes, use_pca=False, name=model_list[i_model] + 'final',
+                                           good_clusters=data_loader.good_clusters)
 
 
 do_train = False
