@@ -48,12 +48,12 @@ class ClassificationTester(object):
         self.n_classes = len(self.unique_classes)
         self.mu, self.sigma, self.inv_sigma = self.calc_mu_sigma()
         self.ID = self.calc_ID()
+        self.gmm, self.gmm_classes = self.fit_gmm()
+        self.gmm_classes = fit_labels(np.copy(self.labels), self.gmm_classes)
+        self.gmm_acc = accuracy_score(self.labels, self.gmm_classes)
+        self.L_ratio = self.calc_L_ratio()
         self.DBS = davies_bouldin_score(self.features, self.labels)  # the lower the better
         self.CHS = calinski_harabasz_score(self.features, self.labels)  # the higher the better?
-        # self.gmm, self.gmm_classes = self.fit_gmm()
-        # self.gmm_classes = fit_labels(np.copy(self.labels), self.gmm_classes)
-        # self.gmm_acc = accuracy_score(self.labels, self.gmm_classes)
-        # self.L_ratio = self.calc_L_ratio()
         self.n_classes_for_gmm = self.n_classes_to_fit_gmm_using_good_labels()
         # self.SS = silhouette_score(self.features, self.labels)  # the higher the better
         # self.gmm_pairwise_acc = self.fit_gmm_pairwise()
