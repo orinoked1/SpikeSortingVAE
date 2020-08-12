@@ -52,8 +52,8 @@ if do_train:
                 vae_model.target_means = cur_target_means
                 loss_array = vae_model.train_data_loader(data_loader)
                 plt.plot(loss_array)
-                plt.savefig(os.path.join(os.getcwd(),
-                                         'vaeStage3_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}_FLC{}.png'.format(
+                plt.savefig(os.path.join(os.getcwd(),'model',
+                                         'Model_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}_FLC{}.png'.format(
                                              cfg["latent_dim"],
                                              lr,
                                              cfg["weight_decay"],
@@ -62,8 +62,8 @@ if do_train:
                                              fact,
                                              cfg["conv1_ch"])))
                 plt.clf()
-                vae_model.save_model(os.path.join(os.getcwd(),
-                                                  'vaeStage3_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}_FLC{}.pt'.format(
+                vae_model.save_model(os.path.join(os.getcwd(),'model',
+                                                  'Model_LD{}_LR{:.0E}_WD{:.0E}_SD{}_DR{:.1f}_F{}_FLC{}.pt'.format(
                                                       cfg["latent_dim"],
                                                       lr,
                                                       cfg["weight_decay"],
@@ -76,7 +76,7 @@ if do_train:
 do_search = True
 if do_search:
     max_acc = 0
-    model_list = glob.glob(os.path.join('model', 'Model.pt'))
+    model_list = glob.glob(os.path.join('model', 'Model*.pt'))
     for i_model in range(len(model_list)):
         file_dirs = [os.path.join(os.getcwd(), 'example_data')]
         file_clu_names = ["mF105_10.spk.2", ]
