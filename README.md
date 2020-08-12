@@ -2,8 +2,6 @@
 
 We developed an innovative spike sorting feature extractor variational autoencoder model. The encoder network is equipped with residual transformations to extract representative features from spikes. The latent space is used as a feature space for a Gaussian Mixture Model that separates the spikes to different clusters. The clustering accuracy and performance of the proposed feature space is compared to the traditionally used Principal Component space. 
 
-Experimental results on in-vivo dataset show that the proposed approach consistently outperforms the conventional Principal Component approach. With the latent space compared to the Principal Component space, the Gaussian Mixture Model accuracy tested against ground truth was higher by 15%. Two common clustering quality indices, the Davies-Boulding index and the Calinski-Harabasz index, also showed that clustering at the latent space was superior to the clustering at the Principal Component space.
-
 Code:
 
 The main function is main.py it does training, validation, results evaluation and creates figures.
